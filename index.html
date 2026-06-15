@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amortization Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- KaTeX for LaTeX rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+    <style>
+        .table-container::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .table-container::-webkit-scrollbar-track {
+            background: #f1f5f9; 
+            border-radius: 4px;
+        }
+        .table-container::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+        /* Style for the input being solved for */
+        .is-solving {
+            background-color: #f8fafc;
+            color: #2563eb !important;
+            font-weight: 700;
+            border-color: #bfdbfe;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen py-8 px-4 sm:px-6 lg:px-8">
+
+    <div class="max-w-6xl mx-auto space-y-6">
+        
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-slate-900 flex items-center justify-center gap-3">
+                <i data-lucide="calculator" class="w-8 h-8 text-blue-600"></i>
+                Universal Amortization Solver
+            </h1>
+            <p class="text-slate-500 mt-2">Enter any 4 variables to automatically solve for the 5th.</p>
+        </header>
+
+        <!-- Error Message Container -->
+        <div id="error-container" class="hidden bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg shadow-sm mb-6">
+            <div class="flex items-center">
+                <i data-lucide="alert-circle" class="w-5 h-5 text-red-500 mr-2"></i>
+                <p id="error-message" class="text-sm text-red-700 font-medium"></p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Input Panel -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 lg:col-span-1 h-fit">
+                
+                <div class="mb-6 pb-5 border-b border-slate-100">
+                    <label for="solve-for" class="block text-sm font-bold text-slate-800 mb-2 flex items-center gap-2">
+                        <i data-lucide="target" class="w-4 h-4 text-blue-600"></i>
+                        What do you want to solve for?
+                    </label>
+                    <select id="solve-for" class="block w-full rounded-lg border-slate-300 border py-2 px-3 text-slate-900 focus:ring-blue-500 focus:border-blue-500 sm:text-sm font-medium bg-slate-50">
+                        <option value="P" selected>Payment (P)</option>
+                        <option value="A">Loan Amount (A)</option>
+                        <option value="r">Annual Interest Rate (r)</option>
+                        <option value="n">Payments per Year (n)</option>
+                        <option value="t">Loan Term in Years (t)</option>
+                    </select>
+                </div>
+
+                <form id="calc-form" class="space-y-5">
+                    
+                    <!-- Loan Amount (A) -->
+                    <div class="input-group" id="group-A">
+                        <label for="input-A" class="block text-sm font-medium text-slate-700 mb-1">
+                            Loan Amount <span class="font-serif text-indigo-600 font-bold ml-1">(A)</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span class="text-slate-400 sm:text-sm">$</span>
+                            </div>
+                            <input type="number" id="input-A" value="250000" min="0" step="0.01" class="pl-7 block w-full rounded-lg border-slate-300 border py-2.5 px-3 text-slate-900 focus:ring-blue-500 focus:border-blue-500 sm:text-sm outline-none transition-colors" required>
+                        </div>
+                    </div>
+
+                    <!-- Payment (P) -->
+                    <div class="input-group" id="group-P">
+                        <label for="input-P" class="block text-sm font-medium text-slate-700 mb-1">
+                            Payment per Period <span class="font-serif text-indigo-600 font-bold ml-1">(P)</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span class="text-slate-400 sm:text-sm">$</span>
+                            </div>
+                            <input type="number" id="input-P" value="" min="0" step="0.01" class="pl-7 block w-full rounded-lg border-slate-300 border py-2.5 px-3 text-slate-900 focus:ring-blue-500 focus:border-blue-500 sm:text-sm outline-none transition-colors">
+                        </div>
+                    </div>
+
+                    <!-- Interest Rate (r) -->
+                    <div class="input-group" id="group-r">
+                        <label for="input-r" class="block text-sm font-medium text-slate-700 mb-1">
+                            Annual Interest Rate <span class="font-serif text-indigo-600 font-bold ml-1">(r)</span>
+                        </label>
+                        <div class="relative">
+                            <input type="number" id="input-r" value="6.5" min="0" step="0.001" class="block w-full rounded-lg border-slate-300 border py-2.5 px-3 pr-8 text-slate-900 focus:ring-blue-500 focus:border-blue-500 sm:text-sm outline-none transition-colors" required>
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                <span class="text-slate-400 sm:text-sm">%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payments per Year (n) -->
+                    <div class="input-group" id="group-n">
+                        <label for="input-n" class="block text-sm font-medium text-slate-700 mb-1">
+                            Payments per Year <span class="font-serif text-indigo-600 font-bold ml-1">(n)</span>
+                        </label>
+                        <input type="number" id="input-n" value="12" min="1" step="1" class="block w-full rounded-lg border-slate-300 border py-2.5 px-3 text-slate-900 focus:ring-blue-500 focus:border-blue-500 sm:text-sm outline-none transition-colors" required>
+                    </div>
+
+                    <!-- Term (t) -->
+                    <div class="input-group" id="group-t">
+                        <label for="input-t" class="block text-sm font-medium text-slate-700 mb-1">
+                            Loan Term in Years <span class="font-serif text-indigo-600 font-bold ml-1">(t)</span>
+                        </label>
+                        <input type="number" id="input-t" value="30" min="0.1" step="0.1" class="block w-full rounded-lg border-slate-300 border py-2.5 px-3 text-slate-900 focus:ring-blue-500 focus:border-blue-500 sm:text-sm outline-none transition-colors" required>
+                    </div>
+
+                    <button type="submit" class="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors mt-4">
+                        <i data-lucide="zap" class="w-4 h-4"></i>
+                        Calculate Missing Variable
+                    </button>
+                </form>
+            </div>
+
+            <!-- Results Panel -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 lg:col-span-2 flex flex-col">
+                <h2 class="text-lg font-semibold mb-6 flex items-center gap-2">
+                    <i data-lucide="pie-chart" class="w-5 h-5 text-slate-400"></i>
+                    Loan Breakdown
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center flex-1">
+                    
+                    <!-- Summary Stats -->
+                    <div class="space-y-4">
+                        <div class="bg-blue-50 rounded-xl p-5 border border-blue-100 relative overflow-hidden">
+                            <div class="absolute top-0 right-0 bg-blue-200 text-blue-800 text-xs font-bold px-2 py-1 rounded-bl-lg font-serif">P</div>
+                            <p class="text-sm font-medium text-blue-600 mb-1">Calculated Payment</p>
+                            <p class="text-3xl font-bold text-slate-900" id="out-payment">$0.00</p>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                                <p class="text-xs font-medium text-slate-500 mb-1">Total Principal (A)</p>
+                                <p class="text-lg font-semibold text-slate-800" id="out-principal">$0.00</p>
+                            </div>
+                            <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                                <p class="text-xs font-medium text-slate-500 mb-1">Total Interest</p>
+                                <p class="text-lg font-semibold text-slate-800" id="out-interest">$0.00</p>
+                            </div>
+                            <div class="col-span-2 bg-slate-50 rounded-xl p-4 border border-slate-100">
+                                <p class="text-xs font-medium text-slate-500 mb-1">Total Cost of Loan</p>
+                                <p class="text-xl font-bold text-slate-900" id="out-total-cost">$0.00</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chart -->
+                    <div class="relative h-64 flex justify-center">
+                        <canvas id="paymentChart"></canvas>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Educational Formula Panel -->
+        <div class="bg-gradient-to-br from-indigo-50 to-blue-50/50 rounded-2xl shadow-sm border border-indigo-100 p-6 mt-6">
+            <h2 class="text-lg font-semibold text-indigo-900 mb-5 flex items-center gap-2">
+                <i data-lucide="graduation-cap" class="w-6 h-6 text-indigo-600"></i>
+                The Textbook Formula
+            </h2>
+            <div class="flex flex-col md:flex-row gap-8 items-center md:items-start">
+                
+                <!-- Formula Display -->
+                <div class="bg-white p-6 rounded-xl border border-indigo-100 shadow-sm flex items-center justify-center min-w-[320px] overflow-x-auto">
+                    <div class="text-indigo-900 text-lg sm:text-xl">
+                        $$A = P \left[ \frac{1 - \left(1 + \frac{r}{n}\right)^{-nt}}{\frac{r}{n}} \right]$$
+                    </div>
+                </div>
+
+                <!-- Variables List -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm text-slate-700 flex-1">
+                    <div class="flex flex-col gap-1 bg-white/60 p-3 rounded-lg border border-indigo-50">
+                        <span class="font-bold text-indigo-900 text-base font-serif flex items-center gap-2">
+                            A <span class="font-sans font-normal text-slate-600 text-sm">= Loan Amount</span>
+                        </span>
+                        <span class="text-slate-500">The present value or starting principal.</span>
+                    </div>
+                    <div class="flex flex-col gap-1 bg-white/60 p-3 rounded-lg border border-indigo-50">
+                        <span class="font-bold text-indigo-900 text-base font-serif flex items-center gap-2">
+                            P <span class="font-sans font-normal text-slate-600 text-sm">= Payment</span>
+                        </span>
+                        <span class="text-slate-500">The recurring payment per period.</span>
+                    </div>
+                    <div class="flex flex-col gap-1 bg-white/60 p-3 rounded-lg border border-indigo-50">
+                        <span class="font-bold text-indigo-900 text-base font-serif flex items-center gap-2">
+                            r <span class="font-sans font-normal text-slate-600 text-sm">= Annual Rate</span>
+                        </span>
+                        <span class="text-slate-500">The yearly interest rate (entered as %).</span>
+                    </div>
+                    <div class="flex flex-col gap-1 bg-white/60 p-3 rounded-lg border border-indigo-50">
+                        <span class="font-bold text-indigo-900 text-base font-serif flex items-center gap-2">
+                            n <span class="font-sans font-normal text-slate-600 text-sm">= Payments/Year</span>
+                        </span>
+                        <span class="text-slate-500">Frequency of compounding and payments.</span>
+                    </div>
+                    <div class="flex flex-col gap-1 bg-white/60 p-3 rounded-lg border border-indigo-50 sm:col-span-2">
+                        <span class="font-bold text-indigo-900 text-base font-serif flex items-center gap-2">
+                            t <span class="font-sans font-normal text-slate-600 text-sm">= Time (Years)</span>
+                        </span>
+                        <span class="text-slate-500">The total duration of the loan. The total number of payments equals <span class="font-serif font-bold italic">n &times; t</span>.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Schedule Table -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mt-6">
+            <div class="px-6 py-5 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
+                <h2 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="calendar-days" class="w-5 h-5 text-slate-400"></i>
+                    Amortization Schedule
+                </h2>
+                <div class="text-sm text-slate-500 font-medium" id="schedule-summary"></div>
+            </div>
+            
+            <div class="overflow-x-auto table-container max-h-[500px]">
+                <table class="min-w-full divide-y divide-slate-200">
+                    <thead class="bg-slate-50 sticky top-0 z-10 shadow-sm">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Pmt No.</th>
+                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Payment (P)</th>
+                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Principal</th>
+                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Interest</th>
+                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Total Interest</th>
+                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody id="schedule-body" class="bg-white divide-y divide-slate-200">
+                        <!-- Rows will be generated via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Initialize KaTeX to render the LaTeX formula
+        document.addEventListener("DOMContentLoaded", function() {
+            renderMathInElement(document.body, {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '$', right: '$', display: false}
+                ],
+                throwOnError : false
+            });
+        });
+
+        lucide.createIcons();
+        let breakdownChart = null;
+
+        const formatter = new Intl.NumberFormat('en-US', {
+            style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2,
+        });
+
+        // DOM Elements
+        const form = document.getElementById('calc-form');
+        const solveSelect = document.getElementById('solve-for');
+        const errorContainer = document.getElementById('error-container');
+        const errorMessage = document.getElementById('error-message');
+
+        const inputs = {
+            A: document.getElementById('input-A'),
+            P: document.getElementById('input-P'),
+            r: document.getElementById('input-r'),
+            n: document.getElementById('input-n'),
+            t: document.getElementById('input-t')
+        };
+        
+        const outputs = {
+            payment: document.getElementById('out-payment'),
+            principal: document.getElementById('out-principal'),
+            interest: document.getElementById('out-interest'),
+            totalCost: document.getElementById('out-total-cost'),
+            summary: document.getElementById('schedule-summary'),
+            body: document.getElementById('schedule-body')
+        };
+
+        // Handle UI changes when "Solve For" changes
+        function handleSolveSelection() {
+            const target = solveSelect.value;
+            Object.keys(inputs).forEach(key => {
+                const el = inputs[key];
+                if (key === target) {
+                    el.readOnly = true;
+                    el.required = false;
+                    el.classList.add('is-solving', 'cursor-not-allowed');
+                    el.value = ''; 
+                    el.placeholder = 'Auto-Calculated...';
+                } else {
+                    el.readOnly = false;
+                    el.required = true;
+                    el.classList.remove('is-solving', 'cursor-not-allowed');
+                    el.placeholder = '';
+                }
+            });
+        }
+
+        solveSelect.addEventListener('change', handleSolveSelection);
+        handleSolveSelection(); // Initial setup
+
+        // Bisection Numerical Solver
+        function solveBisection(func, low, high, tolerance = 1e-7, maxIter = 1000) {
+            let fLow = func(low);
+            let fHigh = func(high);
+            
+            if (fLow * fHigh > 0) return null; // No root in this interval
+            
+            for (let i = 0; i < maxIter; i++) {
+                let mid = (low + high) / 2;
+                let fMid = func(mid);
+                
+                if (Math.abs(fMid) < tolerance || (high - low) / 2 < tolerance) {
+                    return mid;
+                }
+                
+                if (fMid * fLow > 0) {
+                    low = mid;
+                    fLow = fMid;
+                } else {
+                    high = mid;
+                    fHigh = fMid;
+                }
+            }
+            return (low + high) / 2;
+        }
+
+        // Primary Calculation Logic
+        function solveAndCalculate() {
+            errorContainer.classList.add('hidden');
+            const target = solveSelect.value;
+            
+            // Extract known inputs
+            let A = parseFloat(inputs.A.value);
+            let P = parseFloat(inputs.P.value);
+            let r_input = parseFloat(inputs.r.value);
+            let n = parseFloat(inputs.n.value);
+            let t = parseFloat(inputs.t.value);
+            let r = r_input / 100;
+
+            try {
+                // 1. Solve for the missing variable
+                if (target === 'A') {
+                    if (r === 0) A = P * n * t;
+                    else A = P * (1 - Math.pow(1 + r/n, -n*t)) / (r/n);
+                    inputs.A.value = A.toFixed(2);
+                } 
+                else if (target === 'P') {
+                    if (r === 0) P = A / (n * t);
+                    else P = A * (r/n) / (1 - Math.pow(1 + r/n, -n*t));
+                    inputs.P.value = P.toFixed(2);
+                } 
+                else if (target === 't') {
+                    if (r === 0) {
+                        t = A / (P * n);
+                    } else {
+                        if (P <= A * (r/n)) throw new Error("Payment (P) is too small to cover the recurring interest. The loan will never be paid off.");
+                        t = -Math.log(1 - (A * r / n) / P) / (n * Math.log(1 + r/n));
+                    }
+                    inputs.t.value = t.toFixed(2);
+                } 
+                else if (target === 'r') {
+                    if (A >= P * n * t) throw new Error("Loan amount (A) is too large for these payments (implies negative interest).");
+                    let foundR = solveBisection((x) => (P * (1 - Math.pow(1 + x/n, -n*t)) / (x/n)) - A, 0.000001, 5.0, 1e-7);
+                    if (foundR === null) throw new Error("Could not find a valid mathematical interest rate for these parameters.");
+                    r = foundR;
+                    inputs.r.value = (r * 100).toFixed(3);
+                } 
+                else if (target === 'n') {
+                    let foundN = solveBisection((x) => {
+                        let pv = (r===0) ? (P * x * t) : (P * (1 - Math.pow(1 + r/x, -x*t)) / (r/x));
+                        return pv - A;
+                    }, 0.1, 10000, 1e-5);
+                    if (foundN === null) throw new Error("Could not find a valid compounding frequency for these parameters.");
+                    n = foundN;
+                    inputs.n.value = n.toFixed(2);
+                }
+
+                // 2. Re-read values strictly to generate the schedule
+                A = parseFloat(inputs.A.value);
+                P = parseFloat(inputs.P.value);
+                r = parseFloat(inputs.r.value) / 100;
+                n = parseFloat(inputs.n.value);
+                t = parseFloat(inputs.t.value);
+
+                // Final safety check
+                if (r > 0 && P <= A * (r/n)) {
+                    throw new Error("Calculated Payment is too small to cover the interest.");
+                }
+
+                generateSchedule(A, P, r, n, t);
+
+            } catch (err) {
+                errorMessage.textContent = err.message;
+                errorContainer.classList.remove('hidden');
+                outputs.body.innerHTML = ''; // Clear table on error
+            }
+        }
+
+        function generateSchedule(A, P, r, n, t) {
+            let balance = A;
+            let totalInterestPaid = 0;
+            let scheduleHTML = '';
+            
+            const periodRate = r / n;
+            const maxPayments = Math.ceil(n * t) + 10; // Failsafe
+            let actualPaymentsMade = 0;
+
+            for (let i = 1; i <= maxPayments; i++) {
+                if (balance <= 0.005) break;
+
+                let interestPayment = balance * periodRate;
+                let principalPayment = P - interestPayment;
+
+                // Handle the final payment rounding to bring balance exactly to 0
+                if (balance < principalPayment) {
+                    principalPayment = balance;
+                    P = principalPayment + interestPayment;
+                    balance = 0;
+                } else {
+                    balance -= principalPayment;
+                }
+
+                totalInterestPaid += interestPayment;
+                actualPaymentsMade++;
+
+                scheduleHTML += `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-6 py-3 whitespace-nowrap text-sm text-slate-500">${i}</td>
+                        <td class="px-6 py-3 whitespace-nowrap text-sm text-slate-900 text-right font-medium">${formatter.format(P)}</td>
+                        <td class="px-6 py-3 whitespace-nowrap text-sm text-slate-600 text-right">${formatter.format(principalPayment)}</td>
+                        <td class="px-6 py-3 whitespace-nowrap text-sm text-slate-600 text-right">${formatter.format(interestPayment)}</td>
+                        <td class="px-6 py-3 whitespace-nowrap text-sm text-slate-400 text-right">${formatter.format(totalInterestPaid)}</td>
+                        <td class="px-6 py-3 whitespace-nowrap text-sm text-slate-900 text-right font-semibold">${formatter.format(balance)}</td>
+                    </tr>
+                `;
+            }
+
+            const totalCost = A + totalInterestPaid;
+
+            // Update UI Outputs
+            outputs.payment.textContent = formatter.format(parseFloat(inputs.P.value));
+            outputs.principal.textContent = formatter.format(A);
+            outputs.interest.textContent = formatter.format(totalInterestPaid);
+            outputs.totalCost.textContent = formatter.format(totalCost);
+            
+            outputs.summary.textContent = `Completed in ${actualPaymentsMade} Payments (${(actualPaymentsMade/n).toFixed(2)} Years)`;
+            outputs.body.innerHTML = scheduleHTML;
+
+            updateChart(A, totalInterestPaid);
+        }
+
+        function updateChart(principal, totalInterest) {
+            const ctx = document.getElementById('paymentChart').getContext('2d');
+            const data = {
+                labels: ['Principal (A)', 'Total Interest'],
+                datasets: [{
+                    data: [principal, totalInterest],
+                    backgroundColor: ['#2563eb', '#93c5fd'],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            };
+
+            if (breakdownChart) {
+                breakdownChart.data = data;
+                breakdownChart.update();
+            } else {
+                breakdownChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: data,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '70%',
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { usePointStyle: true, padding: 20, font: { family: "'Inter', sans-serif", size: 13 } }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(c) {
+                                        let lbl = c.label ? c.label + ': ' : '';
+                                        return lbl + formatter.format(c.parsed);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Form Submit
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            solveAndCalculate();
+        });
+
+        // Calculate initially on load
+        solveAndCalculate();
+
+    </script>
+</body>
+</html>
