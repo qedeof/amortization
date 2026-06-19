@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Amortization Calculator</title>
+    
+    <!-- Favicon (Lucide Calculator Icon) -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232563eb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect width='16' height='20' x='4' y='2' rx='2'/><line x1='8' x2='16' y1='6' y2='6'/><line x1='16' x2='16' y1='14' y2='18'/><path d='M16 10h.01'/><path d='M12 10h.01'/><path d='M8 10h.01'/><path d='M12 14h.01'/><path d='M8 14h.01'/><path d='M12 18h.01'/><path d='M8 18h.01'/></svg>">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -155,7 +159,7 @@
                     <div class="space-y-4">
                         <div class="bg-blue-50 rounded-xl p-5 border border-blue-100 relative overflow-hidden">
                             <div class="absolute top-0 right-0 bg-blue-200 text-blue-800 text-xs font-bold px-2 py-1 rounded-bl-lg font-serif">P</div>
-                            <p class="text-sm font-medium text-blue-600 mb-1">Calculated Payment</p>
+                            <p class="text-sm font-medium text-blue-600 mb-1">Payment</p>
                             <p class="text-3xl font-bold text-slate-900" id="out-payment">$0.00</p>
                         </div>
                         
@@ -217,7 +221,7 @@
                         <span class="font-bold text-indigo-900 text-base font-serif flex items-center gap-2">
                             r <span class="font-sans font-normal text-slate-600 text-sm">= Annual Rate</span>
                         </span>
-                        <span class="text-slate-500">The yearly interest rate (entered as %).</span>
+                        <span class="text-slate-500">The yearly interest rate (entered as % in the form).</span>
                     </div>
                     <div class="flex flex-col gap-1 bg-white/60 p-3 rounded-lg border border-indigo-50">
                         <span class="font-bold text-indigo-900 text-base font-serif flex items-center gap-2">
