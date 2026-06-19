@@ -165,7 +165,7 @@
                         
                         <div class="grid grid-cols-2 gap-4">
                             <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                                <p class="text-xs font-medium text-slate-500 mb-1">Total Principal (A)</p>
+                                <p class="text-xs font-medium text-slate-500 mb-1">Loan Amount (A)</p>
                                 <p class="text-lg font-semibold text-slate-800" id="out-principal">$0.00</p>
                             </div>
                             <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
@@ -489,7 +489,7 @@
         function updateChart(principal, totalInterest) {
             const ctx = document.getElementById('paymentChart').getContext('2d');
             const data = {
-                labels: ['Principal (A)', 'Total Interest'],
+                labels: ['Loan Amount (A)', 'Total Interest'],
                 datasets: [{
                     data: [principal, totalInterest],
                     backgroundColor: ['#2563eb', '#93c5fd'],
